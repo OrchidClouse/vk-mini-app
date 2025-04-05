@@ -1,14 +1,14 @@
-import { Button } from '@vkontakte/vkui';
+import './MainButton.css';
 
 export default function MainButton({
   children,
   ...props
 }: {
   children: React.ReactNode;
-} & React.ComponentProps<typeof Button>) {
+}) {
   return (
-    <Button appearance='neutral' {...props}>
+    <button className='btn' {...props}>
       {children}
-    </Button>
+    </button>
   );
 }
