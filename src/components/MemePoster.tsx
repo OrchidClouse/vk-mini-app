@@ -76,22 +76,54 @@ const MemePoster = () => {
 
   const postMemeToWall = async () => {
     try {
-      bridge
-        .send('VKWebAppShowWallPostBox', {
-          message: 'Hello!',
-          attachments: 'https://habr.com',
-        })
-        .then((data) => {
-          if (data.post_id) {
-            // Запись размещена
-          }
-        })
-        .catch((error) => {
-          // Ошибка
-          console.log(error);
-        });
+      if (!accessToken || !memeUrl) {
+        console.error('Нет accessToken или memeUrl');
+        return;
+      }
+
+      // 1. Получить upload_url через VK API
+      const uploadServer = await bridge.send('VKWebAppCallAPIMethod', {
+        method: 'photos.getWallUploadServer',
+        params: {
+          access_token: accessToken,
+          v: '5.131',
+        },
+      });
+
+      const uploadUrl = uploadServer.response.upload_url;
+
+      // 2. Скачать картинку и отправить как файл
+      const blob = await fetch(memeUrl).then((res) => res.blob());
+      const formData = new FormData();
+      formData.append('photo', blob);
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData,
+      }).then((res) => res.json());
+
+      // 3. Сохранить фото в альбом через VK API
+      const saveResponse = await bridge.send('VKWebAppCallAPIMethod', {
+        method: 'photos.saveWallPhoto',
+        params: {
+          access_token: accessToken,
+          v: '5.131',
+          photo: uploadResponse.photo,
+          server: uploadResponse.server,
+          hash: uploadResponse.hash,
+        },
+      });
+
+      const savedPhoto = saveResponse.response[0];
+      const attachment = `photo${savedPhoto.owner_id}_${savedPhoto.id}`;
+
+      // 4. Показать диалог публикации
+      await bridge.send('VKWebAppShowWallPostBox', {
+        message: 'Вот мой мем!',
+        attachments: attachment,
+      });
     } catch (error) {
-      console.error('Ошибка при вызове VKWebAppShowWallPostBox:', error);
+      console.error('Ошибка при публикации поста:', error);
     }
   };
 
@@ -147,7 +179,7 @@ const MemePoster = () => {
           onClick={postMemeToWall}
           style={{ width: isMobile ? '100%' : 'auto' }}
         >
-          Опубликовать на стену
+          Опубликовать мем
         </MainButton>
       </Div>
     </Div>
