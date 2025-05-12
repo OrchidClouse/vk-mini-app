@@ -10,7 +10,6 @@ export interface HomeProps extends NavIdProps {
 }
 
 export const Home: FC<HomeProps> = ({ id }) => {
-  // const { photo_200, city, first_name, last_name } = { ...fetchedUser };
   const routeNavigator = useRouteNavigator();
   const [stage, setStage] = useState<'main' | 'catalog'>('main');
   console.log(routeNavigator);
@@ -21,21 +20,14 @@ export const Home: FC<HomeProps> = ({ id }) => {
     cursor: 'pointer',
   };
 
+  console.log(window.screen.width);
+
+  const getMargin = window.screen.width < 500 ? 36 : 0;
+
   return (
     <Panel id={id}>
-      {/* {fetchedUser && (
-        <Group>
-          <Cell
-            before={photo_200 && <Avatar src={photo_200} />}
-            subtitle={city?.title}
-          >
-            {`${first_name} ${last_name}`}
-          </Cell>
-        </Group>
-      )} */}
-
       <Group>
-        <Div style={{ display: 'flex' }}>
+        <Div style={{ display: 'flex', marginTop: getMargin }}>
           <Div
             style={stage === 'main' ? underline : { cursor: 'pointer' }}
             onClick={() => setStage('main')}

@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import bridge from '@vkontakte/vk-bridge';
 import { Div } from '@vkontakte/vkui';
 import MainButton from './MainButton/MainButton';
+import { makeStory } from '../utils/makeStory';
+import { IMeme } from '../models/memeModel';
 
 const MemePoster = () => {
-  const [memes, setMemes] = useState([]);
-  const [memeUrl, setMemeUrl] = useState('');
+  const [memes, setMemes] = useState<IMeme[]>([]);
+  const [meme, setMeme] = useState<IMeme | null>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 600);
   const [accessToken, setAccessToken] = useState('');
+  console.log(meme);
 
   useEffect(() => {
     const handleResize = () => {
@@ -24,9 +27,8 @@ const MemePoster = () => {
         const response = await fetch('https://api.imgflip.com/get_memes');
         const data = await response.json();
         setMemes(data.data.memes);
-        setMemeUrl(
+        setMeme(
           data.data.memes[Math.floor(Math.random() * data.data.memes.length)]
-            .url
         );
       } catch (error) {
         console.error('Ошибка при получении списка мемов:', error);
@@ -38,23 +40,15 @@ const MemePoster = () => {
 
   const getRandomMeme = () => {
     const randomIndex = Math.floor(Math.random() * memes.length);
-    setMemeUrl(memes[randomIndex].url);
+    setMeme(memes[randomIndex]);
   };
 
   const handleShowImage = () => {
-    bridge
-      .send('VKWebAppShowImages', {
-        images: [memeUrl],
-      })
-      .then((data) => {
-        if (data.result) {
-          // Нативный экран открыт
-        }
-      })
-      .catch((error) => {
-        // Ошибка
-        console.log(error);
-      });
+    if (!meme) return;
+
+    bridge.send('VKWebAppShowImages', {
+      images: [meme.url],
+    });
   };
 
   useEffect(() => {
@@ -73,59 +67,6 @@ const MemePoster = () => {
         console.log(error);
       });
   }, []);
-
-  const postMemeToWall = async () => {
-    try {
-      if (!accessToken || !memeUrl) {
-        console.error('Нет accessToken или memeUrl');
-        return;
-      }
-
-      // 1. Получить upload_url через VK API
-      const uploadServer = await bridge.send('VKWebAppCallAPIMethod', {
-        method: 'photos.getWallUploadServer',
-        params: {
-          access_token: accessToken,
-          v: '5.131',
-        },
-      });
-
-      const uploadUrl = uploadServer.response.upload_url;
-
-      // 2. Скачать картинку и отправить как файл
-      const blob = await fetch(memeUrl).then((res) => res.blob());
-      const formData = new FormData();
-      formData.append('photo', blob);
-
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'POST',
-        body: formData,
-      }).then((res) => res.json());
-
-      // 3. Сохранить фото в альбом через VK API
-      const saveResponse = await bridge.send('VKWebAppCallAPIMethod', {
-        method: 'photos.saveWallPhoto',
-        params: {
-          access_token: accessToken,
-          v: '5.131',
-          photo: uploadResponse.photo,
-          server: uploadResponse.server,
-          hash: uploadResponse.hash,
-        },
-      });
-
-      const savedPhoto = saveResponse.response[0];
-      const attachment = `photo${savedPhoto.owner_id}_${savedPhoto.id}`;
-
-      // 4. Показать диалог публикации
-      await bridge.send('VKWebAppShowWallPostBox', {
-        message: 'Вот мой мем!',
-        attachments: attachment,
-      });
-    } catch (error) {
-      console.error('Ошибка при публикации поста:', error);
-    }
-  };
 
   return (
     <Div
@@ -147,10 +88,10 @@ const MemePoster = () => {
           justifyContent: 'center',
         }}
       >
-        {memeUrl && (
+        {meme?.url && (
           <img
             onClick={handleShowImage}
-            src={memeUrl}
+            src={meme.url}
             alt='Мем'
             style={{
               maxWidth: '100%',
@@ -176,7 +117,7 @@ const MemePoster = () => {
           Показать другой мем
         </MainButton>
         <MainButton
-          onClick={postMemeToWall}
+          onClick={() => makeStory(meme)}
           style={{ width: isMobile ? '100%' : 'auto' }}
         >
           Опубликовать мем
