@@ -59,7 +59,6 @@ const MemePoster = () => {
       })
       .then((data) => {
         if (data.access_token) {
-          console.log('tokin: ', data);
           setAccessToken(data.access_token);
         }
       })
