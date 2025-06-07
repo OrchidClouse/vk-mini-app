@@ -9,8 +9,6 @@ const MemePoster = () => {
   const [memes, setMemes] = useState<IMeme[]>([]);
   const [meme, setMeme] = useState<IMeme | null>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 600);
-  const [accessToken, setAccessToken] = useState('');
-  console.log(meme);
 
   useEffect(() => {
     const handleResize = () => {
@@ -52,19 +50,10 @@ const MemePoster = () => {
   };
 
   useEffect(() => {
-    bridge
-      .send('VKWebAppGetAuthToken', {
-        app_id: 53239479,
-        scope: 'status,photos,wall',
-      })
-      .then((data) => {
-        if (data.access_token) {
-          setAccessToken(data.access_token);
-        }
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+    bridge.send('VKWebAppGetAuthToken', {
+      app_id: 53239479,
+      scope: 'status,photos,wall',
+    });
   }, []);
 
   return (

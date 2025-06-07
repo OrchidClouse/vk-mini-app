@@ -20,8 +20,6 @@ export const Home: FC<HomeProps> = ({ id }) => {
     cursor: 'pointer',
   };
 
-  console.log(window.screen.width);
-
   const getMargin = window.screen.width < 500 ? 36 : 0;
 
   return (
